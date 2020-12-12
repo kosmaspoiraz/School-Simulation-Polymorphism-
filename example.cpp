@@ -26,16 +26,13 @@ public:
         fatigue = 0;
         L = l;
     }
-    virtual ~Human(){};
+    virtual ~Human() = 0;
 
     virtual void attend(int hours) { fatigue = fatigue + (hours * L); }
 
     virtual void teach(int hours) { fatigue = fatigue + (hours * L); }
 
-    void print()
-    {
-        cout << Name << " with Fatigue: " << fatigue << endl;
-    }
+    void print() { cout << Name << " with Fatigue: " << fatigue << endl; }
 
     int getnumclass() { return num_class; }
 
@@ -43,6 +40,7 @@ public:
 
     string getname() { return Name; }
 };
+Human::~Human() {}
 
 class Student : public Human
 {
@@ -99,7 +97,7 @@ private:
 
 public:
     Place() {}
-    virtual ~Place(){};
+    virtual ~Place() = 0;
 
     virtual void print(){};
 
@@ -111,6 +109,7 @@ public:
 
     virtual void operate(int hours){};
 };
+Place ::~Place() {}
 
 class Class : public Place
 {
