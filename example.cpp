@@ -26,19 +26,15 @@ public:
         fatigue = 0;
         L = l;
     }
-    ~Human() {}
+    virtual ~Human(){};
 
-    void attend(int hours)
-    {
-        fatigue = fatigue + (hours * L);
-    }
+    virtual void attend(int hours) { fatigue = fatigue + (hours * L); }
 
-    void teach(int hours) { fatigue = fatigue + (hours * L); }
+    virtual void teach(int hours) { fatigue = fatigue + (hours * L); }
 
     void print()
     {
-        cout << endl
-             << Name << " with Fatigue: " << fatigue << endl;
+        cout << Name << " with Fatigue: " << fatigue << endl;
     }
 
     int getnumclass() { return num_class; }
@@ -52,7 +48,7 @@ class Student : public Human
 {
 private:
 public:
-    Student(int f, int c, int l) : Human(f, c, l)
+    Student(int f, int c, int L) : Human(f, c, L)
     {
         cout << "A New Student has been created!"
              << " " << getname() << ". Floor number: " << getnumfloor() << ". Class number " << getnumclass() << endl;
@@ -64,11 +60,27 @@ public:
     }
 };
 
+class Junior : public Student
+{
+private:
+public:
+    Junior(int f, int c, int lj) : Student(f, c, lj) {}
+    virtual ~Junior(){};
+};
+
+class Senior : public Student
+{
+private:
+public:
+    Senior(int f, int c, int ls) : Student(f, c, ls) {}
+    virtual ~Senior(){};
+};
+
 class Teacher : public Human
 {
 private:
 public:
-    Teacher(int f, int c, int l) : Human(f, c, l)
+    Teacher(int f, int c, int lt) : Human(f, c, lt)
     {
         cout << "A New Teacher has been created!"
              << " " << getname() << ". Floor number: " << getnumfloor() << ". Class number " << getnumclass() << endl;
@@ -83,21 +95,21 @@ public:
 class Place
 {
 private:
-    int hours;
-    Student *student;
+    Human *student;
 
 public:
-    Place(int N)
-    {
-        hours = N;
-    }
+    Place() {}
     virtual ~Place(){};
 
-    virtual void enter(Student *s) { student = s; }
+    virtual void print(){};
 
-    virtual Student *exit() { return student; }
+    virtual void enter(Human *s) { student = s; }
 
-    void operate(int hours) {}
+    virtual Human *exit() { return student; }
+
+    virtual void place(Human *t){};
+
+    virtual void operate(int hours){};
 };
 
 class Class : public Place
@@ -106,65 +118,80 @@ private:
     int num_class;
     int num_floor;
     int capacity;
-    Student **arrays;
-    Teacher *teacher;
+    int c_class;
+    Human **arrays;
+    Human *teacher;
     int i = 0;
+    int test = 0;
 
 public:
-    Class(int cclass, int numfloor, int numclass, int N) : Place(N)
+    Class(int cclass, int numfloor, int numclass)
     {
         capacity = cclass;
+        c_class = cclass;
         num_floor = numfloor;
         num_class = numclass;
-        arrays = new Student *[capacity];
+        arrays = new Human *[capacity];
         cout << "A New Class has been created! Class number " << num_class << ", in Floor number: " << num_floor << endl;
     }
     ~Class()
     {
+        cout << endl;
+        for (i = 0; i < c_class; i++)
+        {
+            delete arrays[i];
+        };
+        delete[] arrays;
+        delete teacher;
         cout << "A Class to be destroyed! Class number: " << num_class << ", in Floor number: " << num_floor << endl;
     }
 
     void print()
     {
-        cout << "People in class number " << num_class << ":" << endl;
-        for (i = 0; i < sizeof(arrays); i++)
+        cout << endl
+             << "PEOPLE IN CLASS NUMBER " << num_class << ":" << endl;
+        for (i = 0; i < c_class; i++)
         {
             arrays[i]->print();
         }
-        cout << "The teacher is: ";
+        cout << "THE TEACHER IS: ";
         teacher->print();
         cout << endl;
     }
 
-    void enter(Student *s)
+    void enter(Human *s)
     {
-        if (capacity > 0)
-        {
-            arrays[i] = s;
-            cout << arrays[i]->getname() << " enters Class number: " << num_class << ", in Floor number: " << num_floor << endl;
-            i++;
-            capacity--;
-        }
-        else
-        {
-            cout << "CLASS IS FULL!" << endl;
-        }
+        arrays[i] = s;
+        cout << arrays[i]->getname() << " enters Class number: " << num_class << ", in Floor number: " << num_floor << endl;
+        i++;
+        capacity--;
+        test++;
     }
 
-    void place(Teacher *t)
+    void place(Human *t)
     {
         teacher = t;
         cout << "Teacher " << teacher->getname() << " enters Class number: " << num_class << ", in Floor number: " << num_floor << endl;
+    }
+
+    void operate(int hours)
+    {
+        cout << "CLASS NUMBER " << num_class << ", IN FLOOR NUMBER " << num_floor << " OPERATES FOR " << hours << " HOURS!" << endl;
+        for (i = 0; i < c_class; i++)
+        {
+            arrays[i]->attend(hours);
+        }
+        teacher->teach(hours);
     }
 };
 
 class Corridor : public Place
 {
 private:
-    Student *student;
+    Human *student;
 
 public:
-    Corridor(int N) : Place(N)
+    Corridor()
     {
         cout << "A New Corridor has been created!" << endl;
     }
@@ -172,12 +199,12 @@ public:
     {
         cout << "A Corridor to be destroyed!" << endl;
     }
-    void enter(Student *student)
+    void enter(Human *student)
     {
         cout << student->getname() << " enters Corridor!" << endl;
         Place::enter(student);
     }
-    Student *exit()
+    Human *exit()
     {
         student = Place::exit();
         cout << student->getname() << " exits Corridor!" << endl;
@@ -189,40 +216,47 @@ class Floor : public Place
 {
 private:
     int num_floor;
-    Student *student;
-    Teacher *teacher;
-    Class **arrayc;
-    Corridor *corridor;
+    Human *student;
+    Human *teacher;
+    Place **arrayc;
+    Place *corridor;
     int classtoenter;
     int i = 0;
 
 public:
-    Floor(int N, int c_class, int j) : Place(N)
+    Floor(int c_class, int j)
     {
         num_floor = j;
-        cout << "A New Floor has been created! Floor number: " << num_floor << endl;
-        corridor = new Corridor(N);
-        arrayc = new Class *[6];
+        cout << endl
+             << "A New Floor has been created! Floor number: " << num_floor << endl;
+        corridor = new Corridor();
+        arrayc = new Place *[6];
         for (j = 0; j < 6; j++)
         {
-            arrayc[j] = new Class(c_class, num_floor, j, N);
+            arrayc[j] = new Class(c_class, num_floor, j);
         };
     }
     ~Floor()
     {
+        for (i = 0; i < 6; i++)
+        {
+            delete arrayc[i];
+        };
+        delete[] arrayc;
+        delete corridor;
         cout << "A Floor to be destroyed! Floor number: " << num_floor << endl;
     }
 
     void print()
     {
-        cout << "Floor number " << num_floor << " contains: " << endl;
+        cout << "FLOOR NUMBER " << num_floor << " CONTAINS: " << endl;
         for (i = 0; i < 6; i++)
         {
             arrayc[i]->print();
         }
     }
 
-    void enter(Student *s)
+    void enter(Human *s)
     {
         student = s;
         cout << student->getname() << " enters Floor number: " << num_floor << "!" << endl;
@@ -232,21 +266,31 @@ public:
         arrayc[classtoenter]->enter(student);
     }
 
-    void place(Teacher *t)
+    void place(Human *t)
     {
         teacher = t;
         classtoenter = teacher->getnumclass();
         arrayc[classtoenter]->place(teacher);
+    }
+
+    void operate(int hours)
+    {
+        cout << endl
+             << "FLOOR NUMBER " << num_floor << " OPERATES FOR " << hours << " HOURS!" << endl;
+        for (i = 0; i < 6; i++)
+        {
+            arrayc[i]->operate(hours);
+        }
     }
 };
 
 class Stair : public Place
 {
 private:
-    Student *student;
+    Human *student;
 
 public:
-    Stair(int N) : Place(N)
+    Stair()
     {
         cout << "A New Stair has been created!" << endl;
     }
@@ -254,12 +298,12 @@ public:
     {
         cout << "A Stair to be destroyed!" << endl;
     }
-    void enter(Student *student)
+    void enter(Human *student)
     {
         cout << student->getname() << " enters Stair!" << endl;
         Place::enter(student);
     }
-    Student *exit()
+    Human *exit()
     {
         student = Place::exit();
         cout << student->getname() << " exits Stair!" << endl;
@@ -270,10 +314,10 @@ public:
 class Yard : public Place
 {
 private:
-    Student *student;
+    Human *student;
 
 public:
-    Yard(int N) : Place(N)
+    Yard()
     {
         cout << "A New Schoolyard has been created!" << endl;
     }
@@ -281,12 +325,12 @@ public:
     {
         cout << "A Schoolyard to be destroyed!" << endl;
     }
-    void enter(Student *student)
+    void enter(Human *student)
     {
         cout << student->getname() << " enters Schoolyard!" << endl;
         Place::enter(student);
     }
-    Student *exit()
+    Human *exit()
     {
         student = Place::exit();
 
@@ -299,25 +343,25 @@ class School : public Place
 {
 private:
     int c_class;
-    Floor **arrayf;
-    Yard **yard;
-    Stair **stair;
+    Place **arrayf;
+    Place **yard;
+    Place **stair;
     int i = 0;
     int floortoenter;
 
 public:
-    School(int cclass, int N) : Place(N)
+    School(int cclass)
     {
         cout << "A New School has been created!" << endl;
         c_class = cclass;
-        yard = new Yard *;
-        stair = new Stair *;
-        arrayf = new Floor *[3];
-        yard[0] = new Yard(N);
-        stair[0] = new Stair(N);
+        yard = new Place *;
+        stair = new Place *;
+        arrayf = new Place *[3];
+        yard[0] = new Yard();
+        stair[0] = new Stair();
         for (i = 0; i < 3; i++)
         {
-            arrayf[i] = new Floor(N, c_class, i);
+            arrayf[i] = new Floor(c_class, i);
         };
     }
     ~School()
@@ -336,16 +380,18 @@ public:
 
     void print()
     {
-        cout << "School life consists of: " << endl;
+        cout << endl
+             << "SCHOOL LIFE CONSISTS OF: " << endl;
         for (i = 0; i < 3; i++)
         {
             arrayf[i]->print();
         }
     }
 
-    void enter(Student *student)
+    void enter(Human *student)
     {
-        cout << student->getname() << " enters School!" << endl;
+        cout << endl
+             << student->getname() << " enters School!" << endl;
         (*yard)->enter(student);
         student = (*yard)->exit();
         (*stair)->enter(student);
@@ -354,37 +400,48 @@ public:
         arrayf[floortoenter]->enter(student);
     }
 
-    void place(Teacher *teacher)
+    void place(Human *teacher)
     {
         floortoenter = teacher->getnumfloor();
         arrayf[floortoenter]->place(teacher);
     }
+
+    void operate(int hours)
+    {
+        cout << endl
+             << "SCHOOL OPERATES FOR " << hours << " HOURS!" << endl;
+        for (i = 0; i < 3; i++)
+        {
+            arrayf[i]->operate(hours);
+        }
+    }
 };
 
-int main()
+int main(int argc, char *argv[])
 {
-    int c_class = 5;
+    int c_class = atoi(argv[1]);
     int capacity = 18 * c_class;
-    int Lj = 3;
-    int Ls = 2;
-    int Lt = 2;
-    int N = 8;
+    int Lj = atoi(argv[2]);
+    int Ls = atoi(argv[3]);
+    int Lt = atoi(argv[4]);
+    int N = atoi(argv[5]);
     int i = 0;
     int f = 0;
     int c = 0;
     int j = 0;
     int k = 0;
-    Student **arrays;
-    Teacher **arrayt;
-    Student *temps;
-    Teacher *tempt;
+    Human **arrays;
+    Human **arrayt;
+    Human *temps;
+    Human *tempt;
 
     //CREATING SCHOOL
-    School *sxoleio;
-    sxoleio = new School(c_class, N);
+    Place *sxoleio = new School(c_class);
+
+    cout << endl;
 
     //CREATING STUDENTS WITH FLOOR AND CLASS NUMBER
-    arrays = new Student *[capacity];
+    arrays = new Human *[capacity];
     while (i < capacity)
     {
         for (f = 0; f < 3; f++)
@@ -393,12 +450,13 @@ int main()
             {
                 for (c = 0; c < 3; c++)
                 {
-                    arrays[i] = new Student(f, c, Lj);
+                    arrays[i] = new Junior(f, c, Lj);
                     i++;
                 }
                 for (c = 3; c < 6; c++)
                 {
-                    arrays[i] = new Student(f, c, Ls);
+                    arrays[i] = new Senior(f, c, Ls);
+                    i++;
                 }
             }
         }
@@ -414,9 +472,11 @@ int main()
         arrays[k] = temps;
     };
 
+    cout << endl;
+
     //CREATING TEACHER WITH FLOOR AND CLASS NUMBER
     i = 0;
-    arrayt = new Teacher *[18];
+    arrayt = new Human *[18];
     while (i < 18)
     {
         for (f = 0; f < 3; f++)
@@ -438,14 +498,24 @@ int main()
         arrayt[k] = tempt;
     };
 
+    //ENTERING STUDENTS
     for (i = 0; i < capacity; i++)
     {
         sxoleio->enter(arrays[i]);
+        arrays[i] = nullptr;
     }
+
+    cout << endl;
+
+    //ENTERING TEACHERS
     for (i = 0; i < 18; i++)
     {
         sxoleio->place(arrayt[i]);
+        arrayt[i] = nullptr;
     }
+
+    //OPERATING SCHOOL FOR N HOURS
+    sxoleio->operate(N);
 
     //PRINT SCHOOL
     sxoleio->print();
@@ -462,7 +532,10 @@ int main()
     //DESTRUCTION OF ANY STUDENT AND TEACHER NOT ENTERED SCHOOL
     for (i = 0; i < capacity; i++)
     {
-        delete arrays[i];
+        if (arrays[i] != nullptr)
+        {
+            delete arrays[i];
+        }
     };
     delete[] arrays;
     for (i = 0; i < 18; i++)
